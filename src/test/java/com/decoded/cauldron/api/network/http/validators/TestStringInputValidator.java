@@ -17,7 +17,6 @@ public class TestStringInputValidator implements InputValidator<String> {
       return false;
     }
 
-    LOG.info("Value: " + value + " was valid!");
     return true;
   }
 }

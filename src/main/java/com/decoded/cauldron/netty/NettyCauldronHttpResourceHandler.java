@@ -9,7 +9,9 @@ import com.decoded.cauldron.api.network.http.HeaderNames;
 import com.decoded.cauldron.api.network.http.HttpMethod;
 import com.decoded.cauldron.api.network.http.HttpResource;
 import com.decoded.cauldron.api.network.http.MimeType;
-import com.decoded.cauldron.api.network.security.CryptographyService;
+import com.decoded.cauldron.api.network.security.crypto.CryptographyService;
+import com.decoded.cauldron.api.network.security.crypto.google.GoogleTinkConfiguration;
+import com.decoded.cauldron.api.network.security.crypto.google.GoogleTinkCryptographyService;
 import com.decoded.cauldron.internal.routing.RequestRouter;
 import com.decoded.cauldron.netty.context.NettyHttpRequestContext;
 import com.decoded.cauldron.netty.network.NettyHttpNetworkResource;
@@ -50,32 +52,49 @@ public class NettyCauldronHttpResourceHandler extends ChannelInboundHandlerAdapt
 
   private static Map<MimeType, ServerCodec<String>> codecMap = ImmutableMap.of(MimeType.APPLICATION_JSON, new JacksonCodec(),
       MimeType.TEXT_PLAIN, source -> source.toString());
-  private final Map<String, ? super HttpResource> router;
-  private CryptographyService cryptographyService = new CryptographyService();
+  private Map<String, ? super HttpResource> router;
+  private CryptographyService cryptographyService;
 
   /**
    * Constructor.
    *
-   * @param router the map of resources.
+   * @param router                     the map of resources.
+   * @param regenerateCryptographyKeys regenerates the cryptography keys upon restarting
    */
-  public NettyCauldronHttpResourceHandler(Map<String, ? super NettyHttpNetworkResource> router) {
-    this.router = Collections.unmodifiableMap(router);
+  public NettyCauldronHttpResourceHandler(Map<String, ? super NettyHttpNetworkResource> router,
+                                          boolean regenerateCryptographyKeys) {
+    initializeRouter(router);
+
+    initializeCryptographyService(regenerateCryptographyKeys);
+  }
+
+  private void initializeRouter(Map<String, ? super NettyHttpNetworkResource> routingMap) {
+    this.router = Collections.unmodifiableMap(routingMap);
+  }
+
+  private void initializeCryptographyService(boolean regenerateKeys) {
+    // TODO - move this out of the codebase and use a fabric based key
+    final String masterKeyUri = "aws-kms://" + System.getenv("DEV_MASTER_KEY_ARN");
+    final String cryptographicKeySetFile = "cauldron_key_set.json";
+    final String keysRelativeLocation = "keys";
+
+    GoogleTinkConfiguration cryptoConfig = new GoogleTinkConfiguration(masterKeyUri, cryptographicKeySetFile, keysRelativeLocation);
+    this.cryptographyService = new GoogleTinkCryptographyService(cryptoConfig);
 
     cryptographyService.initialize();
     // https://us-east-2.console.aws.amazon.com/kms/home?region=us-east-2#/kms/keys
-
-    cryptographyService.generateEncryptionKeys("keys/", false);
-    cryptographyService.loadEncryptionKeys("keys/");
+    cryptographyService.generateEncryptionKeys(regenerateKeys);
+    cryptographyService.loadEncryptionKeys();
   }
 
-  //
   @Override
   public void channelReadComplete(final ChannelHandlerContext ctx) {
     ctx.flush();
   }
 
   private NettyHttpRequestContext getNewHttpRequestContext(HttpRequest httpRequest, ChannelHandlerContext ctx) {
-    NettyHttpRequestContext context = InvocationContext.setRequestContext(new NettyHttpRequestContext(ctx).setRequest(httpRequest));
+    NettyHttpRequestContext context = InvocationContext.setRequestContext(
+        new NettyHttpRequestContext(ctx).setCryptographyService(cryptographyService).setRequest(httpRequest));
     handle100ContinueExpectation(httpRequest, ctx);
     return context;
   }

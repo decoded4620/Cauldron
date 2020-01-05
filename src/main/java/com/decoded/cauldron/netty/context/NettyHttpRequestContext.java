@@ -5,6 +5,7 @@ import com.decoded.cauldron.api.CauldronApi;
 import com.decoded.cauldron.api.network.http.CauldronHttpMethod;
 import com.decoded.cauldron.api.network.http.HeaderNames;
 import com.decoded.cauldron.api.network.http.HttpMethod;
+import com.decoded.cauldron.api.network.security.crypto.CryptographyService;
 import com.decoded.cauldron.netty.handler.codec.http.EnhancedCookie;
 import com.decoded.cauldron.netty.handler.codec.http.EnhancedServerCookieEncoder;
 import com.decoded.cauldron.server.exception.CauldronServerException;
@@ -67,7 +68,13 @@ public class NettyHttpRequestContext implements CauldronHttpRequestContext {
   private List<Cookie> addedCookies = new ArrayList<>();
   private Object result;
   private ChannelHandlerContext ctx;
+  private CryptographyService cryptographyService = null;
 
+  /**
+   * Constructor.
+   *
+   * @param ctx the {@link ChannelHandlerContext}
+   */
   public NettyHttpRequestContext(ChannelHandlerContext ctx) {
     this.ctx = ctx;
   }
@@ -76,6 +83,30 @@ public class NettyHttpRequestContext implements CauldronHttpRequestContext {
     return ctx;
   }
 
+  @Override
+  public CryptographyService getCryptographyService() {
+    return cryptographyService;
+  }
+
+  /**
+   * Set the cryptography Service.
+   *
+   * @param cryptographyService a {@link CryptographyService} instance.
+   *
+   * @return this context.
+   */
+  public NettyHttpRequestContext setCryptographyService(final CryptographyService cryptographyService) {
+    this.cryptographyService = cryptographyService;
+    return this;
+  }
+
+  /**
+   * Set the {@link HttpRequest}.
+   *
+   * @param request the request.
+   *
+   * @return this context.
+   */
   public NettyHttpRequestContext setRequest(final HttpRequest request) {
     this.request = request;
     return this;

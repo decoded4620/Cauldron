@@ -27,7 +27,6 @@ public class NettyCauldronServerInitializer extends ChannelInitializer<SocketCha
    * @param httpRoutingMap a {@link Map} of routes to {@link NettyHttpNetworkResource}
    */
   public NettyCauldronServerInitializer(SslContext sslContext, Map<String, ? super NettyHttpNetworkResource> httpRoutingMap) {
-    // TODO SSL
     this.sslContext = sslContext;
     this.httpRoutingMap = httpRoutingMap;
   }
@@ -43,6 +42,6 @@ public class NettyCauldronServerInitializer extends ChannelInitializer<SocketCha
     pipeline.addLast(new HttpContentCompressor());
     pipeline.addLast(new HttpServerCodec());
     pipeline.addLast(new HttpObjectAggregator(20000000));
-    pipeline.addLast(new NettyCauldronHttpResourceHandler(httpRoutingMap));
+    pipeline.addLast(new NettyCauldronHttpResourceHandler(httpRoutingMap, false));
   }
 }

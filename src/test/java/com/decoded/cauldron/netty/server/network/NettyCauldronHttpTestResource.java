@@ -8,16 +8,21 @@ import com.decoded.cauldron.api.network.http.CauldronHttpMethod;
 import com.decoded.cauldron.api.network.http.MimeType;
 import com.decoded.cauldron.api.network.http.validators.TestStringInputValidator;
 import com.decoded.cauldron.api.network.http.validators.TestStringListInputValidator;
+import com.decoded.cauldron.api.network.security.crypto.CryptographyService;
 import com.decoded.cauldron.models.Candy;
 import com.decoded.cauldron.netty.network.NettyHttpNetworkResource;
+import com.decoded.cauldron.server.exception.CauldronServerException;
+import com.decoded.cauldron.server.http.CauldronHttpRequestContext;
 import com.decoded.cauldron.server.http.InvocationContext;
 import com.decoded.cauldron.server.http.cookies.Cookie;
 import com.decoded.cauldron.server.http.cookies.SameSite;
+import java.io.UnsupportedEncodingException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,6 +48,20 @@ public class NettyCauldronHttpTestResource extends NettyHttpNetworkResource {
     if (id == null) {
       return null;
     }
+    CauldronHttpRequestContext requestContext = InvocationContext.getRequestContext();
+    CryptographyService service = requestContext.getCryptographyService();
+    try {
+      String original = "Test";
+
+      byte[] assocData = "x".getBytes("UTF-8");
+      byte[] encryptedBytes = service.encrypt(original.getBytes("UTF-8"), assocData);
+      String encrypted = new String(encryptedBytes, "UTF-8");
+      byte[] decryptedBytes = service.decrypt(encryptedBytes, assocData);
+      String decrypted = new String(decryptedBytes, "UTF-8");
+    } catch (UnsupportedEncodingException ex) {
+      throw new CauldronServerException("Oops bad encoding", ex);
+    }
+
     return new Candy();
   }
 

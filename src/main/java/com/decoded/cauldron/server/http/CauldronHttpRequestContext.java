@@ -2,6 +2,7 @@ package com.decoded.cauldron.server.http;
 
 import com.decoded.cauldron.api.network.http.CauldronHttpMethod;
 import com.decoded.cauldron.api.network.http.HttpMethod;
+import com.decoded.cauldron.api.network.security.crypto.CryptographyService;
 import com.decoded.cauldron.server.http.cookies.Cookie;
 import com.decoded.cauldron.server.http.cookies.Cookies;
 import java.util.List;
@@ -50,4 +51,6 @@ public interface CauldronHttpRequestContext {
   HttpMethod getRequestMethod();
 
   CauldronHttpMethod getCauldronRequestMethod();
+
+  CryptographyService getCryptographyService();
 }
